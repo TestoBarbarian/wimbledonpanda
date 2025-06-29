@@ -654,43 +654,456 @@ select.form-control {
     format('woff2');
 }
 
-/* Custom styles for Wimbledon hupi-veikkaus in addition to design system */
-
-.match-table,
-.picks-table,
-.results-table,
-.leader-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Login Page Styles */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-16);
 }
 
-.match-table th,
-.match-table td,
-.picks-table th,
-.picks-table td,
-.results-table th,
-.results-table td,
-.leader-table th,
-.leader-table td {
-  padding: var(--space-8);
-  border-bottom: 1px solid var(--color-border);
-  text-align: left;
+.login-container .card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: var(--space-8);
+  color: var(--color-primary);
+}
+
+.login-subtitle {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-24);
+}
+
+.login-form {
+  margin-bottom: var(--space-16);
+}
+
+.login-divider {
+  text-align: center;
+  margin: var(--space-16) 0;
+  position: relative;
+}
+
+.login-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.login-divider span {
+  background-color: var(--color-surface);
+  padding: 0 var(--space-12);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.match-table thead {
-  background: var(--color-secondary);
+.loading {
+  text-align: center;
+  padding: var(--space-16);
+  color: var(--color-text-secondary);
 }
 
-.match-table tbody tr:nth-child(odd) {
-  background: rgba(var(--color-primary-rgb, 33, 128, 141), 0.03);
+.error-message {
+  margin-bottom: var(--space-16);
+  padding: var(--space-12);
+  background-color: rgba(var(--color-error-rgb), 0.1);
+  border: 1px solid rgba(var(--color-error-rgb), 0.2);
+  border-radius: var(--radius-base);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
 }
 
-.status {
-  align-self: flex-start;
+/* Main App Styles */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-16);
 }
 
-/* Scrollable card bodies */
-.overflow-auto {
-  overflow: auto;
+.app-header {
+  background-color: var(--color-surface);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-card-border);
+  margin-bottom: var(--space-24);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.user-info span {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+/* Admin Controls */
+.admin-section {
+  margin-bottom: var(--space-24);
+}
+
+.lock-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 32px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-secondary);
+  transition: var(--duration-normal);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--color-surface);
+  transition: var(--duration-normal);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(28px);
+}
+
+input:focus + .toggle-slider {
+  box-shadow: var(--focus-ring);
+}
+
+/* Lock Indicator */
+.lock-indicator {
+  margin-bottom: var(--space-24);
+  text-align: center;
+}
+
+.lock-indicator .status {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+.lock-indicator .status--locked {
+  background-color: rgba(var(--color-error-rgb), var(--status-bg-opacity));
+  color: var(--color-error);
+  border: 1px solid rgba(var(--color-error-rgb), var(--status-border-opacity));
+}
+
+/* Matches Container */
+.matches-container h2 {
+  margin-bottom: var(--space-20);
+  text-align: center;
+}
+
+.matches-list {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.match-item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+
+.match-item:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-12);
+}
+
+.match-time {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+}
+
+.match-players {
+  margin-bottom: var(--space-16);
+}
+
+.match-vs {
+  text-align: center;
+  margin: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.player-name {
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.match-betting {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+}
+
+.bet-option {
+  position: relative;
+}
+
+.bet-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.bet-option label {
+  display: block;
+  padding: var(--space-12) var(--space-16);
+  background-color: var(--color-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-base);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-standard);
+  font-weight: var(--font-weight-medium);
+}
+
+.bet-option label:hover {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-primary);
+}
+
+.bet-option input[type="radio"]:checked + label {
+  background-color: var(--color-primary);
+  color: var(--color-btn-primary-text);
+  border-color: var(--color-primary);
+}
+
+.bet-option input[type="radio"]:focus + label {
+  box-shadow: var(--focus-ring);
+}
+
+.bet-option input[type="radio"]:disabled + label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-secondary);
+  color: var(--color-text-secondary);
+}
+
+.bet-option input[type="radio"]:disabled:checked + label {
+  background-color: var(--color-text-secondary);
+  color: var(--color-surface);
+}
+
+/* Admin Picks Table */
+.admin-picks {
+  margin-top: var(--space-32);
+}
+
+.admin-picks h2 {
+  margin-bottom: var(--space-20);
+}
+
+.picks-table {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-card-border);
+  overflow: hidden;
+}
+
+.picks-header {
+  background-color: var(--color-secondary);
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: var(--font-weight-semibold);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-16);
+}
+
+.picks-row {
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--color-card-border-inner);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-16);
+  align-items: center;
+}
+
+.picks-row:last-child {
+  border-bottom: none;
+}
+
+.picks-row:nth-child(even) {
+  background-color: rgba(var(--color-secondary), 0.3);
+}
+
+.user-picks {
+  font-size: var(--font-size-sm);
+}
+
+.user-email {
+  font-weight: var(--font-weight-medium);
+}
+
+.picks-count {
+  text-align: center;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+}
+
+.picks-timestamp {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* Loading States */
+.loading-matches {
+  text-align: center;
+  padding: var(--space-32);
+  color: var(--color-text-secondary);
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-header .flex {
+    flex-direction: column;
+    gap: var(--space-12);
+    align-items: stretch;
+  }
+
+  .user-info {
+    justify-content: space-between;
+  }
+
+  .match-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+
+  .lock-control {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+
+  .picks-header,
+  .picks-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .picks-header {
+    text-align: center;
+  }
+
+  .picks-timestamp {
+    text-align: left;
+  }
+
+  .picks-count {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: var(--space-12);
+  }
+
+  .match-betting {
+    grid-template-columns: 1fr;
+  }
+
+  .bet-option label {
+    padding: var(--space-16);
+  }
+}
+
+/* Status Animations */
+.status-transition {
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+
+/* Match locked state */
+.match-item.locked {
+  opacity: 0.8;
+  background-color: var(--color-secondary);
+}
+
+.match-item.locked .match-header::after {
+  content: "🔒";
+  font-size: var(--font-size-lg);
+}
+
+/* Success states */
+.pick-saved {
+  animation: pickSaved 0.5s ease-out;
+}
+
+@keyframes pickSaved {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }

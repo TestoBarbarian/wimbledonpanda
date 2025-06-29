@@ -1,136 +1,527 @@
 <!DOCTYPE html>
 <html lang="fi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wimbledon Hupi-veikkaus</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <main class="container py-16 flex flex-col gap-16">
-      <!-- Kirjautumisnäkymä -->
-      <section id="loginSection" class="flex flex-col gap-16">
-        <header>
-          <h1>Wimbledon hupi-veikkaus</h1>
-          <p class="text-secondary">
-            Valitse otteluiden voittajat (1 tai 2). Paras veikkaaja voittaa
-            kunnian!
-          </p>
-        </header>
-
-        <form id="loginForm" class="card flex flex-col gap-16 p-16" autocomplete="off">
-          <div class="form-group">
-            <label for="emailInput" class="form-label">
-              Sähköposti tai käyttäjätunnus
-            </label>
-            <input
-              id="emailInput"
-              type="text"
-              class="form-control"
-              placeholder="esim. nimi@example.com tai PandaPlayer"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="passwordInput" class="form-label">Salasana</label>
-            <input
-              id="passwordInput"
-              type="password"
-              class="form-control"
-              placeholder="Salasana"
-              required
-            />
-          </div>
-          <button type="submit" class="btn btn--primary" id="loginBtn">
-            Kirjaudu / Rekisteröidy
-          </button>
-        </form>
-
-        <div class="flex flex-col gap-8 items-center">
-          <span>tai</span>
-          <button class="btn btn--secondary" id="guestBtn">
-            Jatka ilman tiliä
-          </button>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wimbledon Veikkaus</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="container">
+        <div class="login-container">
+            <div class="card">
+                <div class="card__body">
+                    <h1 class="login-title">Wimbledon Veikkaus</h1>
+                    <p class="login-subtitle">Kirjaudu sisään veikkaukseen</p>
+                    
+                    <div id="loading" class="loading hidden">
+                        <div class="loading-spinner"></div>
+                        <p>Kirjaudutaan sisään...</p>
+                    </div>
+                    
+                    <div id="error-message" class="error-message hidden">
+                        <p id="error-text"></p>
+                    </div>
+                    
+                    <form id="login-form" class="login-form">
+                        <div class="form-group">
+                            <label for="email" class="form-label">Sähköposti</label>
+                            <input type="email" id="email" class="form-control" placeholder="pandaplayer@test.com (admin) tai mikä tahansa">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password" class="form-label">Salasana</label>
+                            <input type="password" id="password" class="form-control" placeholder="mikä tahansa salasana">
+                        </div>
+                        
+                        <button type="submit" class="btn btn--primary btn--full-width">
+                            Kirjaudu sisään
+                        </button>
+                    </form>
+                    
+                    <div class="login-divider">
+                        <span>tai</span>
+                    </div>
+                    
+                    <button id="guest-login" class="btn btn--secondary btn--full-width">
+                        Jatka vieraana
+                    </button>
+                </div>
+            </div>
         </div>
-      </section>
+    </div>
 
-      <!-- Sovellusnäkymä -->
-      <section id="appSection" class="hidden flex flex-col gap-16">
-        <div class="flex justify-between items-center">
-          <h2 id="welcomeText"></h2>
-          <button id="signOutBtn" class="btn btn--outline btn--sm hidden">
-            Kirjaudu ulos
-          </button>
+    <!-- Main App Screen -->
+    <div id="app-screen" class="container hidden">
+        <div class="app-container">
+            <header class="app-header">
+                <div class="flex justify-between items-center">
+                    <h1>Wimbledon Veikkaus</h1>
+                    <div class="user-info">
+                        <span id="user-name">Käyttäjä</span>
+                        <button id="logout-btn" class="btn btn--secondary btn--sm">Kirjaudu ulos</button>
+                    </div>
+                </div>
+            </header>
+            
+            <div id="admin-controls" class="admin-section hidden">
+                <div class="card">
+                    <div class="card__body">
+                        <div class="flex justify-between items-center">
+                            <h3>Admin Hallinta</h3>
+                            <div class="lock-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="lock-toggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span id="lock-status">Vastaukset avoinna</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="lock-indicator" class="lock-indicator">
+                <div class="status status--success">
+                    <span id="lock-indicator-text">Vastaukset avoinna</span>
+                </div>
+            </div>
+            
+            <div class="matches-container">
+                <h2>ATP Ottelut</h2>
+                <div id="matches-list" class="matches-list">
+                    <div class="loading-matches">
+                        <div class="loading-spinner"></div>
+                        <p>Ladataan otteluita...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="admin-picks" class="admin-picks hidden">
+                <h2>Kaikkien käyttäjien valinnat</h2>
+                <div id="picks-table" class="picks-table">
+                    <!-- Admin picks view -->
+                </div>
+            </div>
         </div>
+    </div>
 
-        <!-- Käyttäjän veikkausnäkymä -->
-        <div id="userView" class="hidden card">
-          <div class="card__body flex flex-col gap-16">
-            <p id="lockNotice" class="status status--warning hidden">
-              Veikkaukset on lukittu
-            </p>
-            <div id="savedBadge" class="status status--success hidden">
-              Tallennettu!
-            </div>
+    <script>
+        // Match data
+        const matches = [
+            {"id": "match1", "time": "13:00", "player1": "Bellucci M.", "player2": "Crawford O."},
+            {"id": "match2", "time": "13:00", "player1": "Bonzi B.", "player2": "Medvedev D."},
+            {"id": "match3", "time": "13:00", "player1": "Kopriva V.", "player2": "Thompson J."},
+            {"id": "match4", "time": "13:00", "player1": "Lehecka J.", "player2": "Dellien H."},
+            {"id": "match5", "time": "13:00", "player1": "Mannarino A.", "player2": "O'Connell C."},
+            {"id": "match6", "time": "13:00", "player1": "Moeller E.", "player2": "Tiafoe F."},
+            {"id": "match7", "time": "13:00", "player1": "Tarvet O.", "player2": "Riedi L."},
+            {"id": "match8", "time": "13:00", "player1": "Tien L.", "player2": "Basavareddy N."},
+            {"id": "match9", "time": "14:30", "player1": "Bergs Z.", "player2": "Harris L."},
+            {"id": "match10", "time": "14:30", "player1": "Norrie C.", "player2": "Bautista R."},
+            {"id": "match11", "time": "14:30", "player1": "Popyrin A.", "player2": "Fery A."},
+            {"id": "match12", "time": "14:30", "player1": "Rune H.", "player2": "Jarry N."},
+            {"id": "match13", "time": "15:00", "player1": "Cerundolo F.", "player2": "Borges N."},
+            {"id": "match14", "time": "15:00", "player1": "Darderi L.", "player2": "Safiullin R."},
+            {"id": "match15", "time": "15:00", "player1": "Royer V.", "player2": "Tsitsipas S."},
+            {"id": "match16", "time": "15:30", "player1": "Fognini F.", "player2": "Alcaraz C."},
+            {"id": "match17", "time": "16:00", "player1": "Auger-Aliassime F.", "player2": "Duckworth J."},
+            {"id": "match18", "time": "16:00", "player1": "Carreno-Busta P.", "player2": "Rodesch C."},
+            {"id": "match19", "time": "16:00", "player1": "Struff J-L.", "player2": "Misolic F."},
+            {"id": "match20", "time": "16:30", "player1": "Berrettini M.", "player2": "Majchrzak K."},
+            {"id": "match21", "time": "16:30", "player1": "Fearnley J.", "player2": "Fonseca J."},
+            {"id": "match22", "time": "16:30", "player1": "Harris B.", "player2": "Lajovic D."},
+            {"id": "match23", "time": "16:30", "player1": "McDonald M.", "player2": "Khachanov K."},
+            {"id": "match24", "time": "16:30", "player1": "Quinn E.", "player2": "Searle H."},
+            {"id": "match25", "time": "16:30", "player1": "Rublev A.", "player2": "Djere L."},
+            {"id": "match26", "time": "18:00", "player1": "Arnaldi M.", "player2": "Van De Zandschulp B."},
+            {"id": "match27", "time": "18:00", "player1": "Brooksby J.", "player2": "Griekspoor T."},
+            {"id": "match28", "time": "18:00", "player1": "Diallo G.", "player2": "Altmaier D."},
+            {"id": "match29", "time": "18:00", "player1": "Fritz T.", "player2": "Mpetshi Perricard G."},
+            {"id": "match30", "time": "18:00", "player1": "Holt B.", "player2": "Davidovich Fokina A."},
+            {"id": "match31", "time": "18:00", "player1": "Mochizuki S.", "player2": "Zeppieri G."},
+            {"id": "match32", "time": "19:00", "player1": "Rinderknech A.", "player2": "Zverev A."}
+        ];
 
-            <table id="matchTable" class="match-table">
-              <thead>
-                <tr>
-                  <th>Aika</th>
-                  <th>Pelaaja 1</th>
-                  <th>Pelaaja 2</th>
-                  <th>Valinta</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+        // Global state - using local storage simulation
+        let currentUser = null;
+        let isAdmin = false;
+        let isLocked = false;
+        let userPicks = {};
+        let allUsersPicks = [];
 
-        <!-- Admin dashboard -->
-        <div id="adminView" class="hidden flex flex-col gap-16">
-          <div class="card">
-            <div class="card__body flex flex-col gap-16">
-              <button id="lockBtn" class="btn btn--primary btn--sm">
-                Lukitse vastaukset
-              </button>
-              <p id="lockState" class="status status--info hidden"></p>
-            </div>
-          </div>
+        // DOM elements
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app-screen');
+        const loginForm = document.getElementById('login-form');
+        const guestLoginBtn = document.getElementById('guest-login');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const userNameElement = document.getElementById('user-name');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminControls = document.getElementById('admin-controls');
+        const lockToggle = document.getElementById('lock-toggle');
+        const lockStatus = document.getElementById('lock-status');
+        const lockIndicator = document.getElementById('lock-indicator');
+        const lockIndicatorText = document.getElementById('lock-indicator-text');
+        const matchesList = document.getElementById('matches-list');
+        const adminPicks = document.getElementById('admin-picks');
+        const picksTable = document.getElementById('picks-table');
 
-          <div class="card">
-            <div class="card__header">
-              <h3>Veikkaukset</h3>
-            </div>
-            <div class="card__body overflow-auto">
-              <table id="picksTable" class="picks-table"></table>
-            </div>
-          </div>
+        // Local storage keys
+        const STORAGE_KEYS = {
+            currentUser: 'wimbledon_current_user',
+            userPicks: 'wimbledon_user_picks',
+            lockState: 'wimbledon_lock_state',
+            allPicks: 'wimbledon_all_picks'
+        };
 
-          <div class="card">
-            <div class="card__header flex justify-between items-center">
-              <h3>Tulokset</h3>
-              <button id="publishResultsBtn" class="btn btn--primary btn--sm">
-                Julkaise tulokset
-              </button>
-            </div>
-            <div class="card__body overflow-auto">
-              <table id="resultsTable" class="results-table"></table>
-            </div>
-          </div>
+        function showLoading(show) {
+            loading.classList.toggle('hidden', !show);
+            loginForm.classList.toggle('hidden', show);
+            guestLoginBtn.classList.toggle('hidden', show);
+        }
 
-          <div class="card">
-            <div class="card__header">
-              <h3>Pistetaulukko</h3>
-            </div>
-            <div class="card__body overflow-auto">
-              <table id="leaderTable" class="leader-table"></table>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => {
+                errorMessage.classList.add('hidden');
+            }, 5000);
+        }
 
-    <script type="module" src="app.js"></script>
-  </body>
+        function showApp() {
+            loginScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+        }
+
+        function showLogin() {
+            loginScreen.classList.remove('hidden');
+            appScreen.classList.add('hidden');
+        }
+
+        function setupUser(user) {
+            currentUser = user;
+            isAdmin = user.email && user.email.toLowerCase().includes('pandaplayer');
+            
+            let displayName = user.email || 'Vieraskäyttäjä';
+            
+            userNameElement.textContent = displayName;
+            adminControls.classList.toggle('hidden', !isAdmin);
+            adminPicks.classList.toggle('hidden', !isAdmin);
+
+            // Save to local storage
+            localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
+        }
+
+        function loadMatches() {
+            try {
+                const matchesHtml = matches.map(match => `
+                    <div class="match-item" data-match-id="${match.id}">
+                        <div class="match-header">
+                            <div class="match-time">${match.time}</div>
+                        </div>
+                        <div class="match-players">
+                            <div class="player-name">${match.player1}</div>
+                            <div class="match-vs">vs</div>
+                            <div class="player-name">${match.player2}</div>
+                        </div>
+                        <div class="match-betting">
+                            <div class="bet-option">
+                                <input type="radio" id="${match.id}-1" name="${match.id}" value="1" ${isLocked ? 'disabled' : ''}>
+                                <label for="${match.id}-1">1</label>
+                            </div>
+                            <div class="bet-option">
+                                <input type="radio" id="${match.id}-2" name="${match.id}" value="2" ${isLocked ? 'disabled' : ''}>
+                                <label for="${match.id}-2">2</label>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                matchesList.innerHTML = matchesHtml;
+                
+                const radioButtons = matchesList.querySelectorAll('input[type="radio"]');
+                radioButtons.forEach(radio => {
+                    radio.addEventListener('change', handlePickChange);
+                });
+                
+                loadUserPicks();
+                
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                matchesList.innerHTML = '<div class="error-message">Otteluiden lataus epäonnistui</div>';
+            }
+        }
+
+        function loadUserPicks() {
+            const savedPicks = localStorage.getItem(STORAGE_KEYS.userPicks + '_' + currentUser.id);
+            if (savedPicks) {
+                userPicks = JSON.parse(savedPicks);
+                
+                Object.entries(userPicks).forEach(([matchId, pick]) => {
+                    const radio = document.getElementById(`${matchId}-${pick}`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                });
+            }
+        }
+
+        function handlePickChange(event) {
+            const matchId = event.target.name;
+            const pick = event.target.value;
+            
+            if (isLocked) {
+                event.preventDefault();
+                showError('Vastaukset on lukittu');
+                return;
+            }
+            
+            try {
+                userPicks[matchId] = pick;
+                
+                // Save to local storage
+                localStorage.setItem(STORAGE_KEYS.userPicks + '_' + currentUser.id, JSON.stringify(userPicks));
+                
+                // Update all users picks for admin view
+                updateAllUsersPicks();
+                
+                const matchItem = event.target.closest('.match-item');
+                if (matchItem) {
+                    matchItem.classList.add('pick-saved');
+                    setTimeout(() => {
+                        matchItem.classList.remove('pick-saved');
+                    }, 500);
+                }
+                
+                // Show success notification
+                showNotification('Valinta tallennettu!', 'success');
+                
+            } catch (error) {
+                console.error('Error saving pick:', error);
+                showError('Valinnan tallentaminen epäonnistui');
+                event.target.checked = false;
+            }
+        }
+
+        function updateAllUsersPicks() {
+            // Get all users picks from localStorage
+            const allPicks = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith(STORAGE_KEYS.userPicks + '_')) {
+                    const userId = key.replace(STORAGE_KEYS.userPicks + '_', '');
+                    const picks = JSON.parse(localStorage.getItem(key));
+                    const userInfo = JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser));
+                    
+                    allPicks.push({
+                        userId: userId,
+                        userEmail: userInfo && userInfo.id === userId ? userInfo.email : 'Käyttäjä ' + userId,
+                        picks: picks,
+                        lastUpdated: new Date()
+                    });
+                }
+            }
+            
+            if (isAdmin) {
+                updateAdminPicksView(allPicks);
+            }
+        }
+
+        function loadLockState() {
+            const savedLockState = localStorage.getItem(STORAGE_KEYS.lockState);
+            isLocked = savedLockState === 'true';
+            updateLockUI();
+        }
+
+        function saveLockState() {
+            localStorage.setItem(STORAGE_KEYS.lockState, isLocked.toString());
+        }
+
+        function updateLockUI() {
+            const statusElement = lockIndicator.querySelector('.status');
+            statusElement.className = isLocked ? 'status status--error status--locked' : 'status status--success';
+            lockIndicatorText.textContent = isLocked ? 'Vastaukset lukittu' : 'Vastaukset avoinna';
+            
+            if (lockToggle && lockStatus) {
+                lockToggle.checked = isLocked;
+                lockStatus.textContent = isLocked ? 'Vastaukset lukittu' : 'Vastaukset avoinna';
+            }
+            
+            const radioButtons = document.querySelectorAll('#matches-list input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.disabled = isLocked;
+            });
+            
+            const matchItems = document.querySelectorAll('.match-item');
+            matchItems.forEach(item => {
+                item.classList.toggle('locked', isLocked);
+            });
+        }
+
+        function handleLockToggle(event) {
+            if (!isAdmin) return;
+            
+            isLocked = event.target.checked;
+            saveLockState();
+            updateLockUI();
+            
+            showNotification(
+                isLocked ? 'Vastaukset lukittu' : 'Vastaukset avattu',
+                isLocked ? 'warning' : 'success'
+            );
+        }
+
+        function updateAdminPicksView(allPicks) {
+            if (!picksTable) return;
+            
+            let html = `
+                <div class="picks-header">
+                    <div>Käyttäjä</div>
+                    <div>Valintoja</div>
+                    <div>Viimeksi päivitetty</div>
+                </div>
+            `;
+            
+            allPicks.forEach(userPicksData => {
+                const picksCount = Object.keys(userPicksData.picks || {}).length;
+                const lastUpdated = userPicksData.lastUpdated.toLocaleString('fi-FI');
+                const userEmail = userPicksData.userEmail || 'Vieraskäyttäjä';
+                
+                html += `
+                    <div class="picks-row">
+                        <div class="user-email">${userEmail}</div>
+                        <div class="picks-count">${picksCount}/32</div>
+                        <div class="picks-timestamp">${lastUpdated}</div>
+                    </div>
+                `;
+            });
+            
+            if (allPicks.length === 0) {
+                html += `
+                    <div class="picks-row">
+                        <div style="grid-column: 1 / -1; text-align: center; color: var(--color-text-secondary);">
+                            Ei valintoja vielä
+                        </div>
+                    </div>
+                `;
+            }
+            
+            picksTable.innerHTML = html;
+        }
+
+        function loadApp() {
+            try {
+                loadMatches();
+                loadLockState();
+                
+                if (isAdmin) {
+                    updateAllUsersPicks();
+                }
+                
+            } catch (error) {
+                console.error('Error loading app:', error);
+                showError('Sovelluksen lataus epäonnistui');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `status status--${type}`;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '1000';
+            notification.style.maxWidth = '300px';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // Event listeners
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Täytä sähköposti ja salasana');
+                return;
+            }
+
+            showLoading(true);
+
+            // Simulate authentication delay
+            setTimeout(() => {
+                const user = {
+                    id: 'user_' + Date.now(),
+                    email: email,
+                    isAnonymous: false
+                };
+                
+                setupUser(user);
+                showApp();
+                loadApp();
+                showLoading(false);
+            }, 1000);
+        });
+
+        guestLoginBtn.addEventListener('click', () => {
+            showLoading(true);
+            
+            // Simulate guest login delay
+            setTimeout(() => {
+                const user = {
+                    id: 'guest_' + Date.now(),
+                    email: null,
+                    isAnonymous: true
+                };
+                
+                setupUser(user);
+                showApp();
+                loadApp();
+                showLoading(false);
+            }, 1000);
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEYS.currentUser);
+            currentUser = null;
+            isAdmin = false;
+            userPicks = {};
+            showLogin();
+            showNotification('Kirjauduttu ulos', 'info');
+        });
+
+        lockToggle.addEventListener('change', handleLockToggle);
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem(STORAGE_KEYS.currentUser);
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    setupUser(user);
+                    showApp();
+                    loadApp();
+                } catch (error) {
+                    console.error('Error loading saved user:', error);
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        });
+    </script>
+</body>
 </html>
