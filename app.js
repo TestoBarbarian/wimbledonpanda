@@ -3,9 +3,15 @@ import { signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
 import { doc, setDoc, getDoc, onSnapshot, collection, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Get Firebase instances from global scope
-const auth = window.auth;
-const db = window.db;
-
+const firebaseConfig = {
+  apiKey: "AIzaSyBxMhG_saa7TqNBgJXvjeT6j-HPTfAMR1g",
+  authDomain: "kauhuwimbledon.firebaseapp.com",
+  projectId: "kauhuwimbledon",
+  storageBucket: "kauhuwimbledon.firebasestorage.app",
+  messagingSenderId: "886810418550",
+  appId: "1:886810418550:web:e60fab8f3c90cd5fcd6e57",
+  measurementId: "G-PBWJXPH84M"
+};
 // Match data
 const matches = [
     {"id": "match1", "time": "13:00", "player1": "Bellucci M.", "player2": "Crawford O."},
