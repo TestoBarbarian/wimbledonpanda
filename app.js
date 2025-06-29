@@ -1,20 +1,19 @@
-// Firebase Configuration
+// Firebase konfiguraatio
 const firebaseConfig = {
     apiKey: "AIzaSyBxMhG_saa7TqNBgJXvjeT6j-HPTfAMR1g",
     authDomain: "kauhuwimbledon.firebaseapp.com",
     projectId: "kauhuwimbledon",
     storageBucket: "kauhuwimbledon.firebasestorage.app",
     messagingSenderId: "886810418550",
-    appId: "1:886810418550:web:e60fab8f3c90cd5fcd6e57",
-    measurementId: "G-PBWJXPH84M"
+    appId: "1:886810418550:web:e60fab8f3c90cd5fcd6e57"
 };
 
-// Initialize Firebase
+// Firebase alustus
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Match data
+// Otteludata
 const matches = [
     {"id": "m1", "time": "13:00", "player1": "Bellucci M.", "player2": "Crawford O."},
     {"id": "m2", "time": "13:00", "player1": "Bonzi B.", "player2": "Medvedev D."},
@@ -50,437 +49,624 @@ const matches = [
     {"id": "m32", "time": "19:00", "player1": "Rinderknech A.", "player2": "Zverev A."}
 ];
 
-// Global state
+// Globaalit muuttujat
 let currentUser = null;
 let isAdmin = false;
 let isLocked = false;
-let userPicks = {};
-let allUserResults = {};
+let allUserPicks = {};
 
-// Admin email
-const ADMIN_EMAIL = "pandaplayer@test.com";
-
-// DOM Elements
+// DOM elementit
 const loginPage = document.getElementById('loginPage');
 const mainApp = document.getElementById('mainApp');
-const emailTab = document.getElementById('emailTab');
-const anonymousTab = document.getElementById('anonymousTab');
-const emailLoginForm = document.getElementById('emailLoginForm');
-const anonymousLoginBtn = document.getElementById('anonymousLoginBtn');
+const loginForm = document.getElementById('loginForm');
+const anonymousBtn = document.getElementById('anonymousBtn');
 const loginError = document.getElementById('loginError');
-const userInfo = document.getElementById('userInfo');
 const logoutBtn = document.getElementById('logoutBtn');
-const adminTabBtn = document.getElementById('adminTab');
-const matchesList = document.getElementById('matchesList');
+const userInfo = document.getElementById('userInfo');
+const adminTabs = document.getElementById('adminTabs');
 const lockStatus = document.getElementById('lockStatus');
-const lockToggle = document.getElementById('lockToggle');
-const resultsTableBody = document.getElementById('resultsTableBody');
+const matchesList = document.getElementById('matchesList');
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('App initializing...');
-    setupEventListeners();
-    setupAuthListener();
+// Käynnistä sovellus kun DOM on valmis
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Wimbledon Veikkaus sovellus käynnistetty');
+    initializeApp();
 });
 
-function setupEventListeners() {
-    // Login tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchLoginTab(btn.dataset.tab));
+function initializeApp() {
+    // Event listenerit
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    if (anonymousBtn) {
+        anonymousBtn.addEventListener('click', handleAnonymousLogin);
+    }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    // Tab navigation
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
 
-    // App tab switching
-    document.querySelectorAll('.app-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchAppTab(btn.dataset.tab));
-    });
+    // Results tab elementit
+    const userSearch = document.getElementById('userSearch');
+    const sortSelect = document.getElementById('sortSelect');
+    if (userSearch) {
+        userSearch.addEventListener('input', filterResults);
+    }
+    if (sortSelect) {
+        sortSelect.addEventListener('change', sortResults);
+    }
 
-    // Email login
-    emailLoginForm.addEventListener('submit', handleEmailLogin);
-
-    // Anonymous login
-    anonymousLoginBtn.addEventListener('click', handleAnonymousLogin);
-
-    // Logout
-    logoutBtn.addEventListener('click', handleLogout);
-
-    // Admin lock toggle
+    // Lock tab elementit
+    const lockToggle = document.getElementById('lockToggle');
     if (lockToggle) {
         lockToggle.addEventListener('change', handleLockToggle);
     }
-}
 
-function switchLoginTab(tabName) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    document.getElementById(`${tabName}Tab`).classList.add('active');
-    hideError();
-}
-
-function switchAppTab(tabName) {
-    document.querySelectorAll('.app-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('#mainApp .tab-content').forEach(content => content.classList.remove('active'));
-    
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    if (tabName === 'admin') {
-        document.getElementById('adminTab-content').classList.add('active');
-    } else {
-        document.getElementById('matchesTab').classList.add('active');
+    // Modal elementit
+    const modalClose = document.querySelector('.modal-close');
+    const modalOverlay = document.querySelector('.modal-overlay');
+    if (modalClose) {
+        modalClose.addEventListener('click', closeModal);
     }
-}
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', closeModal);
+    }
 
-function setupAuthListener() {
-    auth.onAuthStateChanged(async (user) => {
+    // Firebase auth state listener
+    auth.onAuthStateChanged(user => {
         console.log('Auth state changed:', user);
         if (user) {
             currentUser = user;
-            isAdmin = user.email === ADMIN_EMAIL;
-            console.log('User logged in:', user.displayName || user.email || 'Anonymous', 'Admin:', isAdmin);
+            isAdmin = user.email === 'pandaplayer@test.com';
+            console.log('User logged in:', user.email || 'Anonymous', 'Is admin:', isAdmin);
             showMainApp();
             setupRealtimeListeners();
         } else {
-            console.log('User logged out');
-            currentUser = null;
-            isAdmin = false;
+            console.log('No user logged in');
             showLoginPage();
         }
     });
+
+    // Alusta lock status oletusarvoon
+    initializeLockStatus();
 }
 
-async function handleEmailLogin(e) {
+// Kirjautumisfunktiot
+async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('email').value.trim();
+    const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-
+    
+    console.log('Attempting login with:', email);
+    
     if (!email || !password) {
         showError('Syötä sähköposti ja salasana');
         return;
     }
-
+    
     try {
-        hideError();
-        console.log('Attempting email login...');
         await auth.signInWithEmailAndPassword(email, password);
+        console.log('Login successful');
     } catch (error) {
-        console.error('Email login error:', error);
-        showError('Kirjautuminen epäonnistui: ' + error.message);
+        console.error('Kirjautumisvirhe:', error);
+        showError('Kirjautuminen epäonnistui. Tarkista tiedot.');
     }
 }
 
 async function handleAnonymousLogin() {
-    const displayName = document.getElementById('displayName').value.trim();
-    
-    if (!displayName) {
-        showError('Syötä näyttönimi');
-        return;
-    }
-
+    console.log('Attempting anonymous login');
     try {
-        hideError();
-        console.log('Attempting anonymous login with name:', displayName);
-        
-        // Sign in anonymously first
-        const result = await auth.signInAnonymously();
-        console.log('Anonymous auth successful:', result.user.uid);
-        
-        // Update profile with display name
-        await result.user.updateProfile({ 
-            displayName: displayName 
-        });
-        console.log('Display name updated:', displayName);
-        
+        await auth.signInAnonymously();
+        console.log('Anonymous login successful');
     } catch (error) {
-        console.error('Anonymous login error:', error);
-        showError('Kirjautuminen epäonnistui: ' + error.message);
+        console.error('Anonyymi kirjautuminen epäonnistui:', error);
+        showError('Anonyymi kirjautuminen epäonnistui');
     }
 }
 
 async function handleLogout() {
     try {
-        console.log('Logging out...');
         await auth.signOut();
+        console.log('Logout successful');
     } catch (error) {
-        console.error('Logout error:', error);
+        console.error('Uloskirjautumisvirhe:', error);
     }
 }
 
-function showError(message) {
-    loginError.textContent = message;
-    loginError.classList.remove('hidden');
-}
-
-function hideError() {
-    loginError.classList.add('hidden');
-}
-
+// UI näyttöfunktiot
 function showLoginPage() {
-    loginPage.classList.remove('hidden');
-    mainApp.classList.add('hidden');
-    // Clear form fields
-    document.getElementById('email').value = '';
-    document.getElementById('password').value = '';
-    document.getElementById('displayName').value = '';
+    console.log('Showing login page');
+    if (loginPage) loginPage.classList.remove('hidden');
+    if (mainApp) mainApp.classList.add('hidden');
+    clearError();
 }
 
 function showMainApp() {
-    loginPage.classList.add('hidden');
-    mainApp.classList.remove('hidden');
+    console.log('Showing main app');
+    if (loginPage) loginPage.classList.add('hidden');
+    if (mainApp) mainApp.classList.remove('hidden');
     
-    // Update user info
-    const displayName = currentUser.displayName || currentUser.email || 'Anonyymi käyttäjä';
-    userInfo.textContent = `Tervetuloa, ${displayName}`;
+    // Päivitä käyttäjätiedot
+    updateUserInfo();
     
-    // Show admin tab if admin
-    if (isAdmin) {
-        adminTabBtn.classList.remove('hidden');
-    } else {
-        adminTabBtn.classList.add('hidden');
+    // Näytä admin-välilehdet tarvittaessa
+    if (isAdmin && adminTabs) {
+        adminTabs.classList.remove('hidden');
+    } else if (adminTabs) {
+        adminTabs.classList.add('hidden');
+        switchTab('matches'); // Varmista että peruskäyttäjä näkee ottelut
     }
     
-    // Initialize app data
-    renderMatches();
-    loadUserPicks();
-    
-    // Set default lock status
-    updateLockStatus();
+    // Lataa ottelut
+    loadMatches();
 }
 
-function setupRealtimeListeners() {
-    // Listen to lock status
-    db.collection('settings').doc('lock').onSnapshot(doc => {
-        isLocked = doc.exists && doc.data().locked || false;
-        updateLockStatus();
-        updateMatchesUI();
-        
-        if (isAdmin && lockToggle) {
-            lockToggle.checked = isLocked;
-        }
-    }, error => {
-        console.error('Error listening to lock status:', error);
-        // Set default unlocked state if there's an error
-        isLocked = false;
-        updateLockStatus();
-        updateMatchesUI();
+function updateUserInfo() {
+    if (!currentUser || !userInfo) return;
+    
+    const displayName = currentUser.displayName || 
+                       currentUser.email || 
+                       `Anonyymi käyttäjä`;
+    userInfo.textContent = displayName;
+    console.log('Updated user info:', displayName);
+}
+
+function showError(message) {
+    if (loginError) {
+        loginError.textContent = message;
+        loginError.classList.remove('hidden');
+    }
+}
+
+function clearError() {
+    if (loginError) {
+        loginError.classList.add('hidden');
+    }
+}
+
+// Tab navigation
+function switchTab(tabName) {
+    console.log('Switching to tab:', tabName);
+    
+    // Päivitä tab napit
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
-
-    // Listen to all user results (admin only)
-    if (isAdmin) {
-        db.collection('picks').onSnapshot(snapshot => {
-            allUserResults = {};
-            snapshot.forEach(doc => {
-                allUserResults[doc.id] = doc.data();
-            });
-            renderAdminResults();
-        }, error => {
-            console.error('Error listening to picks:', error);
-        });
-    }
-}
-
-function updateLockStatus() {
-    const statusIndicator = lockStatus.querySelector('.status-indicator');
-    const statusText = lockStatus.querySelector('.status-text');
     
-    if (isLocked) {
-        statusIndicator.className = 'status-indicator locked';
-        statusText.textContent = 'Vedonlyönti lukittu';
-    } else {
-        statusIndicator.className = 'status-indicator open';
-        statusText.textContent = 'Vedonlyönti avoinna';
+    // Päivitä tab sisältö
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.toggle('active', content.id === `${tabName}Tab`);
+    });
+    
+    // Lataa tab-kohtainen data
+    if (tabName === 'results' && isAdmin) {
+        loadResultsData();
     }
 }
 
-function renderMatches() {
+// Ottelujen lataus ja näyttö
+function loadMatches() {
+    console.log('Loading matches');
+    if (!matchesList) return;
+    
     matchesList.innerHTML = '';
     
     matches.forEach(match => {
         const matchCard = createMatchCard(match);
         matchesList.appendChild(matchCard);
     });
+    
+    console.log('Loaded', matches.length, 'matches');
 }
 
 function createMatchCard(match) {
-    const card = document.createElement('div');
-    card.className = 'match-card';
+    const div = document.createElement('div');
+    div.className = 'match-card';
+    div.dataset.matchId = match.id;
     
-    card.innerHTML = `
-        <div class="match-header">
+    div.innerHTML = `
+        <div class="match-info">
             <div class="match-time">${match.time}</div>
-        </div>
-        <div class="match-players">
-            <label class="player-option ${isLocked ? 'disabled' : ''}" data-match="${match.id}" data-pick="1">
-                <input type="radio" name="match_${match.id}" value="1" class="player-radio" ${isLocked ? 'disabled' : ''}>
-                <span class="player-name">${match.player1}</span>
-                <span class="player-number">1</span>
-            </label>
-            <label class="player-option ${isLocked ? 'disabled' : ''}" data-match="${match.id}" data-pick="2">
-                <input type="radio" name="match_${match.id}" value="2" class="player-radio" ${isLocked ? 'disabled' : ''}>
-                <span class="player-name">${match.player2}</span>
-                <span class="player-number">2</span>
-            </label>
+            <div class="match-players">
+                ${match.player1} <span class="match-vs">vs</span> ${match.player2}
+            </div>
+            <div class="match-controls">
+                <label class="player-option">
+                    <input type="radio" name="match_${match.id}" value="1" ${isLocked ? 'disabled' : ''}>
+                    <span>1</span>
+                </label>
+                <label class="player-option">
+                    <input type="radio" name="match_${match.id}" value="2" ${isLocked ? 'disabled' : ''}>
+                    <span>2</span>
+                </label>
+                <div class="lock-indicator ${isLocked ? 'locked' : 'open'}"></div>
+            </div>
         </div>
     `;
     
-    // Add click listeners
-    const options = card.querySelectorAll('.player-option');
-    options.forEach(option => {
-        option.addEventListener('click', (e) => {
-            if (!isLocked) {
-                handlePickSelection(match.id, option.dataset.pick);
-            }
-        });
+    if (isLocked) {
+        div.classList.add('locked');
+    }
+    
+    // Lisää event listenerit valinnoille
+    const radioButtons = div.querySelectorAll('input[type="radio"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', () => savePick(match.id, radio.value));
     });
     
-    return card;
+    return div;
 }
 
-function handlePickSelection(matchId, pick) {
-    if (isLocked) return;
+// Valintojen tallentaminen
+async function savePick(matchId, choice) {
+    if (isLocked || !currentUser) {
+        console.log('Cannot save pick - locked or no user');
+        return;
+    }
     
-    userPicks[matchId] = pick;
-    saveUserPicks();
-    updateMatchUI(matchId, pick);
-}
-
-async function saveUserPicks() {
-    if (!currentUser) return;
+    console.log('Saving pick:', matchId, choice);
     
     try {
-        const displayName = currentUser.displayName || currentUser.email || 'Anonyymi käyttäjä';
-        await db.collection('picks').doc(currentUser.uid).set({
+        const userPicksRef = db.collection('picks').doc(currentUser.uid);
+        const displayName = currentUser.displayName || 
+                           currentUser.email || 
+                           `Anonyymi_${currentUser.uid.substring(0, 8)}`;
+        
+        await userPicksRef.set({
             displayName: displayName,
-            picks: userPicks,
+            picks: {
+                [matchId]: choice
+            },
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
-        console.log('Picks saved successfully');
-    } catch (error) {
-        console.error('Error saving picks:', error);
-    }
-}
-
-async function loadUserPicks() {
-    if (!currentUser) return;
-    
-    try {
-        const doc = await db.collection('picks').doc(currentUser.uid).get();
-        if (doc.exists) {
-            const data = doc.data();
-            userPicks = data.picks || {};
-            updateAllMatchesUI();
-            console.log('User picks loaded:', Object.keys(userPicks).length, 'picks');
-        }
-    } catch (error) {
-        console.error('Error loading picks:', error);
-    }
-}
-
-function updateMatchUI(matchId, pick) {
-    const options = document.querySelectorAll(`[data-match="${matchId}"]`);
-    
-    options.forEach(option => {
-        option.classList.remove('selected');
-        const radio = option.querySelector('input');
-        radio.checked = false;
         
-        if (option.dataset.pick === pick) {
-            option.classList.add('selected');
+        console.log('Pick saved successfully');
+        
+    } catch (error) {
+        console.error('Valinnan tallentaminen epäonnistui:', error);
+    }
+}
+
+// Lock status alustus
+function initializeLockStatus() {
+    // Aseta oletusarvo
+    isLocked = false;
+    updateLockStatus();
+    
+    // Yritä luoda lock dokumentti jos se ei ole olemassa
+    if (currentUser && isAdmin) {
+        db.collection('settings').doc('lock').get()
+            .then(doc => {
+                if (!doc.exists) {
+                    return db.collection('settings').doc('lock').set({
+                        locked: false,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Could not initialize lock status:', error);
+            });
+    }
+}
+
+// Reaaliaikaiset kuuntelijat
+function setupRealtimeListeners() {
+    console.log('Setting up realtime listeners');
+    
+    // Kuuntele lukituksen tilaa
+    db.collection('settings').doc('lock').onSnapshot(doc => {
+        if (doc.exists) {
+            isLocked = doc.data().locked || false;
+            console.log('Lock status updated:', isLocked);
+            updateLockStatus();
+        }
+    }, error => {
+        console.log('Error listening to lock status:', error);
+    });
+    
+    // Kuuntele käyttäjän omia valintoja
+    if (currentUser) {
+        db.collection('picks').doc(currentUser.uid).onSnapshot(doc => {
+            if (doc.exists) {
+                const picks = doc.data().picks || {};
+                console.log('User picks updated:', picks);
+                updateUserPicks(picks);
+            }
+        }, error => {
+            console.log('Error listening to user picks:', error);
+        });
+    }
+    
+    // Admin: kuuntele kaikkien käyttäjien valintoja
+    if (isAdmin) {
+        db.collection('picks').onSnapshot(snapshot => {
+            allUserPicks = {};
+            snapshot.docs.forEach(doc => {
+                allUserPicks[doc.id] = doc.data();
+            });
+            console.log('All user picks updated:', Object.keys(allUserPicks).length, 'users');
+            updateResultsTable();
+        }, error => {
+            console.log('Error listening to all picks:', error);
+        });
+    }
+}
+
+function updateLockStatus() {
+    const statusElements = document.querySelectorAll('#lockStatus .status');
+    const lockIndicators = document.querySelectorAll('.lock-indicator');
+    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    
+    statusElements.forEach(status => {
+        if (isLocked) {
+            status.className = 'status status--error';
+            status.textContent = 'Vastaukset lukittu';
+        } else {
+            status.className = 'status status--success';
+            status.textContent = 'Vastaukset avoinna';
+        }
+    });
+    
+    lockIndicators.forEach(indicator => {
+        indicator.className = `lock-indicator ${isLocked ? 'locked' : 'open'}`;
+    });
+    
+    radioButtons.forEach(radio => {
+        radio.disabled = isLocked;
+    });
+    
+    // Päivitä match cardit
+    document.querySelectorAll('.match-card').forEach(card => {
+        card.classList.toggle('locked', isLocked);
+    });
+    
+    // Päivitä admin lock toggle
+    const lockToggle = document.getElementById('lockToggle');
+    const lockToggleLabel = document.getElementById('lockToggleLabel');
+    const lockStatusIndicator = document.getElementById('lockStatusIndicator');
+    
+    if (lockToggle) {
+        lockToggle.checked = isLocked;
+    }
+    if (lockToggleLabel) {
+        lockToggleLabel.textContent = isLocked ? 'Vastaukset lukittu' : 'Vastaukset avoinna';
+    }
+    if (lockStatusIndicator) {
+        const statusDiv = lockStatusIndicator.querySelector('.status');
+        if (statusDiv) {
+            if (isLocked) {
+                statusDiv.className = 'status status--error';
+                statusDiv.textContent = 'Lukittu';
+            } else {
+                statusDiv.className = 'status status--success';
+                statusDiv.textContent = 'Aktiivinen';
+            }
+        }
+    }
+}
+
+function updateUserPicks(picks) {
+    Object.keys(picks).forEach(matchId => {
+        const radio = document.querySelector(`input[name="match_${matchId}"][value="${picks[matchId]}"]`);
+        if (radio) {
             radio.checked = true;
         }
     });
 }
 
-function updateAllMatchesUI() {
-    Object.entries(userPicks).forEach(([matchId, pick]) => {
-        updateMatchUI(matchId, pick);
-    });
-}
-
-function updateMatchesUI() {
-    const options = document.querySelectorAll('.player-option');
-    const radios = document.querySelectorAll('.player-radio');
-    
-    options.forEach(option => {
-        if (isLocked) {
-            option.classList.add('disabled');
-        } else {
-            option.classList.remove('disabled');
-        }
-    });
-    
-    radios.forEach(radio => {
-        radio.disabled = isLocked;
-    });
-}
-
+// Admin lock toggle
 async function handleLockToggle() {
     if (!isAdmin) return;
     
+    const lockToggle = document.getElementById('lockToggle');
+    const newLockState = lockToggle.checked;
+    
+    console.log('Toggling lock to:', newLockState);
+    
     try {
         await db.collection('settings').doc('lock').set({
-            locked: lockToggle.checked
+            locked: newLockState,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        console.log('Lock status updated:', lockToggle.checked);
+        console.log('Lock status updated successfully');
     } catch (error) {
-        console.error('Error updating lock status:', error);
-        // Revert toggle state on error
-        lockToggle.checked = !lockToggle.checked;
+        console.error('Lukituksen päivitys epäonnistui:', error);
+        lockToggle.checked = !newLockState; // Palauta edellinen tila
     }
 }
 
-function renderAdminResults() {
+// Results taulukko (ADMIN)
+function loadResultsData() {
     if (!isAdmin) return;
+    console.log('Loading results data');
+    updateResultsTable();
+}
+
+function updateResultsTable() {
+    const resultsTableBody = document.getElementById('resultsTableBody');
+    const totalUsersSpan = document.getElementById('totalUsers');
+    const completedUsersSpan = document.getElementById('completedUsers');
+    const userSearch = document.getElementById('userSearch');
+    const sortSelect = document.getElementById('sortSelect');
     
-    resultsTableBody.innerHTML = '';
+    if (!isAdmin || !resultsTableBody) return;
     
-    const userEntries = Object.entries(allUserResults);
+    const users = Object.entries(allUserPicks);
+    const totalUsers = users.length;
+    let completedUsers = 0;
     
-    if (userEntries.length === 0) {
+    // Päivitä yhteenveto
+    if (totalUsersSpan) totalUsersSpan.textContent = totalUsers;
+    
+    if (totalUsers === 0) {
         resultsTableBody.innerHTML = `
-            <tr>
-                <td colspan="3" class="no-results">Ei tuloksia vielä</td>
+            <tr class="loading-row">
+                <td colspan="5" class="loading-cell">Ei käyttäjiä vielä</td>
             </tr>
         `;
         return;
     }
     
-    // Sort by timestamp (newest first)
-    userEntries.sort(([,a], [,b]) => {
-        const timeA = a.timestamp ? a.timestamp.seconds : 0;
-        const timeB = b.timestamp ? b.timestamp.seconds : 0;
-        return timeB - timeA;
+    // Lajittele ja suodata käyttäjät
+    let filteredUsers = users;
+    
+    // Haku
+    const searchTerm = userSearch ? userSearch.value.toLowerCase() : '';
+    if (searchTerm) {
+        filteredUsers = filteredUsers.filter(([uid, data]) => 
+            data.displayName.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    // Järjestä
+    const sortBy = sortSelect ? sortSelect.value : 'name';
+    filteredUsers.sort(([uidA, dataA], [uidB, dataB]) => {
+        switch (sortBy) {
+            case 'name':
+                return dataA.displayName.localeCompare(dataB.displayName);
+            case 'timestamp':
+                const timeA = dataA.timestamp ? dataA.timestamp.toDate() : new Date(0);
+                const timeB = dataB.timestamp ? dataB.timestamp.toDate() : new Date(0);
+                return timeB - timeA;
+            case 'picks':
+                const picksA = Object.keys(dataA.picks || {}).length;
+                const picksB = Object.keys(dataB.picks || {}).length;
+                return picksB - picksA;
+            default:
+                return 0;
+        }
     });
     
-    userEntries.forEach(([userId, userData]) => {
-        const row = document.createElement('tr');
+    // Luo taulukkorivit
+    resultsTableBody.innerHTML = '';
+    
+    filteredUsers.forEach(([uid, userData]) => {
+        const picksCount = Object.keys(userData.picks || {}).length;
+        const isComplete = picksCount === 32;
+        if (isComplete) completedUsers++;
         
-        const displayName = userData.displayName || 'Tuntematon käyttäjä';
-        const picks = userData.picks || {};
         const timestamp = userData.timestamp ? 
-            new Date(userData.timestamp.seconds * 1000).toLocaleString('fi-FI') : 
+            formatTimestamp(userData.timestamp.toDate()) : 
             'Ei aikaleimaa';
         
-        // Format picks for display
-        const picksCount = Object.keys(picks).length;
-        const picksText = picksCount > 0 ? 
-            `${picksCount} valintaa: ` + Object.entries(picks)
-                .sort(([a], [b]) => {
-                    const numA = parseInt(a.substring(1));
-                    const numB = parseInt(b.substring(1));
-                    return numA - numB;
-                })
-                .map(([matchId, pick]) => `${matchId}=${pick}`)
-                .join(', ') : 
-            'Ei valintoja';
-        
+        const row = document.createElement('tr');
         row.innerHTML = `
-            <td><strong>${displayName}</strong></td>
-            <td><span class="user-picks">${picksText}</span></td>
-            <td><span class="timestamp">${timestamp}</span></td>
+            <td>
+                <div class="user-name">${userData.displayName}</div>
+            </td>
+            <td>
+                <div class="timestamp">${timestamp}</div>
+            </td>
+            <td>
+                <div class="picks-count">
+                    ${picksCount}<span class="total">/32</span>
+                </div>
+            </td>
+            <td>
+                <div class="user-status">
+                    <div class="status-dot ${isComplete ? 'complete' : picksCount > 0 ? 'partial' : 'none'}"></div>
+                    ${isComplete ? 'Valmis' : picksCount > 0 ? 'Kesken' : 'Ei aloitettu'}
+                </div>
+            </td>
+            <td>
+                <button class="btn btn--primary btn--sm show-picks-btn" data-uid="${uid}">
+                    Näytä valinnat
+                </button>
+            </td>
         `;
+        
+        // Lisää event listener "Näytä valinnat" painikkeelle
+        const showPicksBtn = row.querySelector('.show-picks-btn');
+        showPicksBtn.addEventListener('click', () => showUserPicks(uid, userData));
         
         resultsTableBody.appendChild(row);
     });
     
-    console.log('Admin results updated:', userEntries.length, 'users');
+    // Päivitä yhteenveto
+    if (completedUsersSpan) completedUsersSpan.textContent = completedUsers;
+    
+    console.log('Results table updated:', filteredUsers.length, 'users displayed');
+}
+
+function formatTimestamp(date) {
+    return date.toLocaleString('fi-FI', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function filterResults() {
+    updateResultsTable();
+}
+
+function sortResults() {
+    updateResultsTable();
+}
+
+// Modal käyttäjän valinnoille
+function showUserPicks(uid, userData) {
+    const picksModal = document.getElementById('picksModal');
+    const modalUserName = document.getElementById('modalUserName');
+    const modalPicksList = document.getElementById('modalPicksList');
+    
+    if (!picksModal || !modalUserName || !modalPicksList) return;
+    
+    console.log('Showing picks for user:', userData.displayName);
+    
+    modalUserName.textContent = `${userData.displayName} - Valinnat`;
+    modalPicksList.innerHTML = '';
+    
+    const userPicks = userData.picks || {};
+    
+    matches.forEach(match => {
+        const userChoice = userPicks[match.id];
+        const div = document.createElement('div');
+        div.className = 'modal-pick-item';
+        
+        let choiceDisplay = '';
+        let choiceClass = 'none';
+        
+        if (userChoice === '1') {
+            choiceDisplay = `Pelaaja 1: ${match.player1}`;
+            choiceClass = 'player1';
+        } else if (userChoice === '2') {
+            choiceDisplay = `Pelaaja 2: ${match.player2}`;
+            choiceClass = 'player2';
+        } else {
+            choiceDisplay = 'Ei valintaa';
+            choiceClass = 'none';
+        }
+        
+        div.innerHTML = `
+            <div class="modal-match-time">${match.time}</div>
+            <div class="modal-match-players">
+                ${match.player1} vs ${match.player2}
+            </div>
+            <div class="modal-pick-choice ${choiceClass}">
+                ${choiceDisplay}
+            </div>
+        `;
+        
+        modalPicksList.appendChild(div);
+    });
+    
+    picksModal.classList.remove('hidden');
+}
+
+function closeModal() {
+    const picksModal = document.getElementById('picksModal');
+    if (picksModal) {
+        picksModal.classList.add('hidden');
+    }
 }

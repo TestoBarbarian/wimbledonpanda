@@ -3,129 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wimbledon Vedonlyönti</title>
+    <title>Wimbledon Veikkaus</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div id="app">
-        <!-- Login Page -->
-        <div id="loginPage" class="login-page">
+    <!-- Kirjautumissivu -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card card">
+            <div class="card__body">
+                <h1 class="login-title">Wimbledon Veikkaus</h1>
+                <p class="login-subtitle">Kirjaudu sisään tai jatka anonyymisti</p>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="email" class="form-label">Sähköposti</label>
+                        <input type="email" id="email" class="form-control" placeholder="anna@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Salasana</label>
+                        <input type="password" id="password" class="form-control" placeholder="Salasana">
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Kirjaudu sisään</button>
+                </form>
+                
+                <div class="login-divider">tai</div>
+                
+                <button id="anonymousBtn" class="btn btn--secondary btn--full-width">Jatka anonyymisti</button>
+                
+                <div id="loginError" class="error-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pääsovellus -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Navigaatio -->
+        <header class="app-header">
             <div class="container">
-                <div class="login-container">
-                    <div class="card">
+                <div class="header-content">
+                    <h1 class="app-title">Wimbledon Veikkaus</h1>
+                    <div class="header-actions">
+                        <span id="userInfo" class="user-info"></span>
+                        <button id="logoutBtn" class="btn btn--secondary btn--sm">Kirjaudu ulos</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin-välilehdet -->
+        <div id="adminTabs" class="admin-tabs hidden">
+            <div class="container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="matches">Ottelut</button>
+                    <button class="tab-btn" data-tab="results">Pelaajien Tulokset</button>
+                    <button class="tab-btn" data-tab="lock">Lukitushallinta</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ottelut-välilehti -->
+        <div id="matchesTab" class="tab-content active">
+            <div class="container">
+                <div class="matches-header">
+                    <h2>ATP Ottelut</h2>
+                    <div id="lockStatus" class="lock-status">
+                        <span class="status status--success">Vastaukset avoinna</span>
+                    </div>
+                </div>
+                <div id="matchesList" class="matches-list">
+                    <!-- Ottelut lisätään tähän JavaScript:llä -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Pelaajien Tulokset -välilehti (ADMIN) -->
+        <div id="resultsTab" class="tab-content">
+            <div class="container">
+                <div class="results-header">
+                    <h2>Pelaajien Tulokset</h2>
+                    <div class="results-summary">
+                        <div class="summary-stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="totalUsers">0</span>
+                                <span class="stat-label">Käyttäjää yhteensä</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="completedUsers">0</span>
+                                <span class="stat-label">Tehnyt kaikki valinnat</span>
+                            </div>
+                        </div>
+                        <div class="search-controls">
+                            <input type="text" id="userSearch" class="form-control" placeholder="Hae käyttäjää...">
+                            <select id="sortSelect" class="form-control">
+                                <option value="name">Järjestä nimen mukaan</option>
+                                <option value="timestamp">Järjestä ajan mukaan</option>
+                                <option value="picks">Järjestä valintojen mukaan</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="results-table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Käyttäjänimi</th>
+                                <th>Aikaleima</th>
+                                <th>Valinnat</th>
+                                <th>Status</th>
+                                <th>Toiminnot</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr class="loading-row">
+                                <td colspan="5" class="loading-cell">Ladataan käyttäjätietoja...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lukitushallinta-välilehti (ADMIN) -->
+        <div id="lockTab" class="tab-content">
+            <div class="container">
+                <div class="lock-management">
+                    <h2>Lukitushallinta</h2>
+                    <div class="lock-control-card card">
                         <div class="card__body">
-                            <h1 class="login-title">Wimbledon Vedonlyönti</h1>
-                            <p class="login-subtitle">Kirjaudu sisään aloittaaksesi</p>
-                            
-                            <div class="login-tabs">
-                                <button class="tab-btn active" data-tab="email">Sähköposti</button>
-                                <button class="tab-btn" data-tab="anonymous">Anonyymi</button>
-                            </div>
-
-                            <div id="emailTab" class="tab-content active">
-                                <form id="emailLoginForm" class="login-form">
-                                    <div class="form-group">
-                                        <label for="email" class="form-label">Sähköposti</label>
-                                        <input type="email" id="email" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="password" class="form-label">Salasana</label>
-                                        <input type="password" id="password" class="form-control" required>
-                                    </div>
-                                    <button type="submit" class="btn btn--primary btn--full-width">Kirjaudu sisään</button>
-                                </form>
-                            </div>
-
-                            <div id="anonymousTab" class="tab-content">
-                                <div class="form-group">
-                                    <label for="displayName" class="form-label">Näyttönimi</label>
-                                    <input type="text" id="displayName" class="form-control" placeholder="Syötä nimesi" required>
+                            <div class="lock-toggle-section">
+                                <h3>Vastausten lukitus</h3>
+                                <div class="toggle-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="lockToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span id="lockToggleLabel" class="toggle-label">Vastaukset avoinna</span>
                                 </div>
-                                <button id="anonymousLoginBtn" class="btn btn--primary btn--full-width">Kirjaudu anonyymisti</button>
+                                <div id="lockStatusIndicator" class="status-indicator">
+                                    <div class="status status--success">Aktiivinen</div>
+                                </div>
                             </div>
-
-                            <div id="loginError" class="error-message hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="lockedUsersList" class="locked-users-section hidden">
+                        <h3>Käyttäjät jotka ehtivät tehdä valinnat</h3>
+                        <div id="lockedUsersContent" class="locked-users-content">
+                            <!-- Lukitun tilan käyttäjälista -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Main App -->
-        <div id="mainApp" class="main-app hidden">
-            <header class="app-header">
-                <div class="container">
-                    <div class="header-content">
-                        <h1>Wimbledon Vedonlyönti</h1>
-                        <div class="header-actions">
-                            <span id="userInfo" class="user-info"></span>
-                            <button id="logoutBtn" class="btn btn--outline btn--sm">Kirjaudu ulos</button>
-                        </div>
-                    </div>
+    <!-- Valintojen modaali -->
+    <div id="picksModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalUserName">Käyttäjän valinnat</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalPicksList" class="modal-picks-list">
+                    <!-- Käyttäjän valinnat lisätään tähän -->
                 </div>
-            </header>
-
-            <main class="app-main">
-                <div class="container">
-                    <div class="app-tabs">
-                        <button class="app-tab-btn active" data-tab="matches">Ottelut</button>
-                        <button id="adminTab" class="app-tab-btn hidden" data-tab="admin">Pelaajien Tulokset</button>
-                    </div>
-
-                    <!-- Matches Tab -->
-                    <div id="matchesTab" class="tab-content active">
-                        <div class="betting-status">
-                            <div id="lockStatus" class="lock-status">
-                                <span class="status-indicator"></span>
-                                <span class="status-text">Ladataan...</span>
-                            </div>
-                        </div>
-
-                        <div class="matches-grid">
-                            <div id="matchesList" class="matches-list">
-                                <!-- Matches will be populated by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Admin Tab -->
-                    <div id="adminTab-content" class="tab-content">
-                        <div class="admin-panel">
-                            <div class="admin-controls">
-                                <h2>Admin-paneeli</h2>
-                                <div class="lock-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="lockToggle">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                    <span class="lock-label">Lukitse vedonlyönti</span>
-                                </div>
-                            </div>
-
-                            <div class="players-results">
-                                <h3>Pelaajien tulokset</h3>
-                                <div class="results-table-container">
-                                    <table class="results-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Käyttäjä</th>
-                                                <th>Valinnat</th>
-                                                <th>Aikaleima</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="resultsTableBody">
-                                            <!-- Results will be populated by JavaScript -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+            </div>
         </div>
     </div>
 
