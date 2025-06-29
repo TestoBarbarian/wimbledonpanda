@@ -62,12 +62,12 @@ import {
 
 // *** REPLACE THE CONFIG BELOW WITH YOUR OWN PROJECT CONFIG ***
 const firebaseConfig = {
-  apiKey: "AIzaSyD_demo_key",
-  authDomain: "wimbledon-hupi.firebaseapp.com",
-  projectId: "wimbledon-hupi",
-  storageBucket: "wimbledon-hupi.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef012345",
+  apiKey: "AIzaSyBxMhG_saa7TqNBgJXvjeT6j-HPTfAMR1g",
+  authDomain: "kauhuwimbledon.firebaseapp.com",
+  projectId: "kauhuwimbledon",
+  storageBucket: "kauhuwimbledon.firebasestorage.app",
+  messagingSenderId: "886810418550",
+  appId: "1:886810418550:web:e60fab8f3c90cd5fcd6e57",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
